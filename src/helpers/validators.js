@@ -12,39 +12,105 @@
  *
  * Если какие либо функции написаны руками (без использования библиотек) это не является ошибкой
  */
-
+import * as ramda from 'ramda';
+import { pipe, lte, map, partial, converge, equals, not } from 'ramda';
+const isColor = (color, shape) => ramda.propEq(shape, color);
+const isRed =  partial(isColor, ['red']);
+const isGreen =  partial(isColor, ['green']);
+const isWhite =  partial(isColor, ['white']);
+const isBlue =  partial(isColor, ['blue']);
+const isOrange =  partial(isColor, ['orange']);
+const filterColor = (color, object) => ramda.filter(ramda.equals(color), object);
+const colorLength = (color) => {
+    const colorShape = partial(filterColor, [color])
+    const length = pipe(ramda.keys, ramda.length)
+    return pipe(colorShape, length)
+}
+const isLengthValid = (color, num) => 
+    pipe(
+      colorLength(color), 
+      lte(num)
+    );
 // 1. Красная звезда, зеленый квадрат, все остальные белые.
-export const validateFieldN1 = ({star, square, triangle, circle}) => {
-    if (triangle !== 'white' || circle !== 'white') {
-        return false;
-    }
-
-    return star === 'red' && square === 'green';
+export const validateFieldN1 = (shapes) => {
+    const allPass= ramda.allPass([isRed('star'), isGreen('square'), isWhite('triangle'), isWhite('circle')])
+    return allPass(shapes)
 };
 
 // 2. Как минимум две фигуры зеленые.
-export const validateFieldN2 = () => false;
+
+export const validateFieldN2 =(shapes) => {
+    const isLengthRight = isLengthValid('green', 2)
+    const allPass= ramda.allPass([isLengthRight]);
+    return allPass(shapes)
+};
 
 // 3. Количество красных фигур равно кол-ву синих.
-export const validateFieldN3 = () => false;
+export const validateFieldN3 = (shapes) => {
+    const redCount = colorLength('red');
+    const blueCount = colorLength('blue')
+    const isLengthRight = converge(equals, [redCount, blueCount]);
+    const allPass= ramda.allPass([isLengthRight]);
+    return allPass(shapes)
+};
 
 // 4. Синий круг, красная звезда, оранжевый квадрат треугольник любого цвета
-export const validateFieldN4 = () => false;
+export const validateFieldN4 = (shapes) => {
+    const allPass= ramda.allPass([isRed('star'), isOrange('square'), isBlue('circle')]);
+    return allPass(shapes)
+
+};
 
 // 5. Три фигуры одного любого цвета кроме белого (четыре фигуры одного цвета – это тоже true).
-export const validateFieldN5 = () => false;
+export const validateFieldN5 = (shapes) => {
+    const colors = ['green', 'blue', 'orange', 'red']; 
+    const anyPass = ramda.anyPass(map(color => isLengthValid(color, 3), colors));
+
+    return anyPass(shapes); 
+
+
+};
 
 // 6. Ровно две зеленые фигуры (одна из зелёных – это треугольник), плюс одна красная. Четвёртая оставшаяся любого доступного цвета, но не нарушающая первые два условия
-export const validateFieldN6 = () => false;
+export const validateFieldN6 = (shapes) => {
+    const greenCount = colorLength('green');
+    const redCount = colorLength('red');
+    const isLengthGreen = pipe(greenCount, equals(2));
+    const isLengthRed = pipe(redCount, equals(1));
+    const allPass = ramda.allPass([ isLengthGreen, isLengthRed, isGreen('triangle')]);
+    return allPass(shapes);
+};
 
 // 7. Все фигуры оранжевые.
-export const validateFieldN7 = () => false;
+export const validateFieldN7 = (shapes) => {
+    const isLengthRight = isLengthValid('orange', 4)
+    const allPass= ramda.allPass([isLengthRight]);
+    return allPass(shapes)
+};
 
 // 8. Не красная и не белая звезда, остальные – любого цвета.
-export const validateFieldN8 = () => false;
+export const validateFieldN8 = (shapes) => {
+    const noRed = pipe(isRed('star'), not);
+    const noWhite = pipe(isWhite('star'), not);
+    const allPass= ramda.allPass([noRed, noWhite]);
+    return allPass(shapes)
+
+};
 
 // 9. Все фигуры зеленые.
-export const validateFieldN9 = () => false;
+export const validateFieldN9 = (shapes) => {
+    const isLengthRight = isLengthValid('green', 4)
+    const allPass=ramda.allPass([isLengthRight]);
+    return allPass(shapes)
+};
 
 // 10. Треугольник и квадрат одного цвета (не белого), остальные – любого цвета
-export const validateFieldN10 = () => false;
+export const validateFieldN10 = (shapes) => {
+    const triangleColor = ramda.prop('triangle');
+    const squareleColor = ramda.prop('square');
+    const isEqual = converge(ramda.equals, [triangleColor, squareleColor]);
+    const isNotWhite = pipe(isWhite('square'), not)
+    const allPass = ramda.allPass([isEqual, isNotWhite]);
+    return allPass(shapes);
+
+};
